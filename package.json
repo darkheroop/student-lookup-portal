@@ -1,0 +1,21 @@
+{
+  "name": "new-api-bridge",
+  "version": "1.0.0",
+  "description": "Minimal responsive website integrating Main1 and Main2 APIs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "express",
+    "api-bridge",
+    "vercel"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

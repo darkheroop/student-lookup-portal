@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lookup</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <div class="card">
+      <h1 class="title">Lookup</h1>
+
+      <form id="lookupForm" novalidate>
+        <div class="form-group">
+          <label for="studentNumber" class="label">10-Digit Number</label>
+          <input
+            type="text"
+            id="studentNumber"
+            name="studentNumber"
+            inputmode="numeric"
+            maxlength="10"
+            placeholder="Enter 10-digit number"
+            autocomplete="off"
+            required
+            aria-describedby="errorMessage"
+          >
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn">Submit</button>
+      </form>
+
+      <!-- Loading Indicator -->
+      <div id="loadingIndicator" class="loading-box" role="status" aria-live="polite" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Processing...</span>
+      </div>
+
+      <!-- Error Message Area -->
+      <div id="errorMessage" class="error-box" role="alert" aria-live="polite" hidden></div>
+
+      <!-- Result Area -->
+      <div id="resultArea" class="result-box" aria-live="polite" hidden>
+        <div class="result-row">
+          <span class="result-label">Username:</span>
+          <span id="resultUsername" class="result-value"></span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Plaintext:</span>
+          <span id="resultPlaintext" class="result-value"></span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
