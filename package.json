@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "build": "node -e \"if (process.env.DATABASE_URL || process.env.DATABASE_POSTGRES_URL) { require('./src/database/migrate').runMigrations().catch(e => console.warn('[Build] Migration notice:', e.message)); }\"",
+    "db:migrate": "node src/database/migrate.js"
   },
   "keywords": [
     "express",
@@ -16,6 +18,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "pg": "^8.23.1"
   }
 }
