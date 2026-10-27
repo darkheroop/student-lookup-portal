@@ -7,7 +7,9 @@ CREATE TABLE IF NOT EXISTS api_keys (
   name VARCHAR(255),
   project_name VARCHAR(255) NOT NULL,
   description TEXT,
-  key_prefix VARCHAR(32) NOT NULL,
+  key_prefix VARCHAR(255) NOT NULL,
+  full_key VARCHAR(255),
+  api_key VARCHAR(255),
   key_hash VARCHAR(128) NOT NULL UNIQUE,
   status VARCHAR(20) NOT NULL DEFAULT 'active',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -22,7 +24,10 @@ CREATE TABLE IF NOT EXISTS api_keys (
 );
 
 -- Non-destructive column additions in case table was created with an older schema
+ALTER TABLE api_keys ALTER COLUMN key_prefix TYPE VARCHAR(255);
 ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS full_key VARCHAR(255);
+ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS api_key VARCHAR(255);
 ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMPTZ NULL;
 
 -- 2. api_key_usage audit log table

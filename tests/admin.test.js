@@ -200,7 +200,10 @@ test('Admin API Keys: CRUD and Toggle operations with CSRF protection', async ()
     assert.strictEqual(listRes.status, 200);
     const listData = await listRes.json();
     assert.strictEqual(listData.success, true);
-    assert.ok(listData.keys.some(k => k.id === keyId));
+    const foundKey = listData.keys.find(k => k.id === keyId);
+    assert.ok(foundKey, 'Key should be found in list');
+    assert.strictEqual(foundKey.api_key, createData.key, 'List should return full generated API key');
+    assert.strictEqual(foundKey.keyPrefix, createData.key, 'keyPrefix should be full generated API key');
 
     // 5. Toggle key status (active -> disabled)
     const toggleRes = await fetch(`${appServer.url}/admin/api/client-keys/${keyId}/toggle`, {

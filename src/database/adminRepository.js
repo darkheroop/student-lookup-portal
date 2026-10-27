@@ -72,7 +72,9 @@ class PostgresAdminRepository {
             name VARCHAR(255),
             project_name VARCHAR(255) NOT NULL,
             description TEXT,
-            key_prefix VARCHAR(32) NOT NULL,
+            key_prefix VARCHAR(255) NOT NULL,
+            full_key VARCHAR(255),
+            api_key VARCHAR(255),
             key_hash VARCHAR(128) NOT NULL UNIQUE,
             status VARCHAR(20) NOT NULL DEFAULT 'active',
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -87,10 +89,20 @@ class PostgresAdminRepository {
           );
         `);
 
-        // Non-destructive column additions
+        // Non-destructive column additions and schema adjustments
         await client.query(`
+          ALTER TABLE api_keys ALTER COLUMN key_prefix TYPE VARCHAR(255);
           ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+          ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS full_key VARCHAR(255);
+          ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS api_key VARCHAR(255);
           ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMPTZ NULL;
+
+          UPDATE api_keys
+          SET full_key = 'sk_support_216db4f3762bc6bc2369ad9318e27369fa41f2a0b881c9135231c93ac90da9c6',
+              api_key = 'sk_support_216db4f3762bc6bc2369ad9318e27369fa41f2a0b881c9135231c93ac90da9c6',
+              key_prefix = 'sk_support_216db4f3762bc6bc2369ad9318e27369fa41f2a0b881c9135231c93ac90da9c6'
+          WHERE key_hash = '5792e172d6c4daa71c2d645fab50bb1347160a81462ecf1d7ebfcf9145e30419'
+            AND (full_key IS NULL OR key_prefix LIKE '%...');
         `);
 
         // 2. api_key_usage audit log table
@@ -163,12 +175,16 @@ class PostgresAdminRepository {
       return val instanceof Date ? val.toISOString() : new Date(val).toISOString();
     };
 
+    const fullKeyValue = row.full_key || row.api_key || row.key_prefix || '';
+
     return {
       id: row.id,
       name: row.name || row.project_name || '',
       projectName: row.project_name || row.name || '',
       description: row.description || '',
-      keyPrefix: row.key_prefix,
+      fullKey: fullKeyValue,
+      apiKey: fullKeyValue,
+      keyPrefix: fullKeyValue,
       keyHash: row.key_hash,
       status: row.status,
       createdAt: toIso(row.created_at),
@@ -239,18 +255,21 @@ class PostgresAdminRepository {
     await this.init();
     const query = `
       INSERT INTO api_keys (
-        id, name, project_name, description, key_prefix, key_hash, status,
+        id, name, project_name, description, key_prefix, full_key, api_key, key_hash, status,
         created_at, updated_at, expires_at, revoked_at, last_used_at, rate_limit_per_minute,
         total_requests, successful_requests, failed_requests
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
     `;
 
+    const fullKeyValue = record.fullKey || record.apiKey || record.keyPrefix;
     await this.pool.query(query, [
       record.id,
       record.name || record.projectName,
       record.projectName || record.name,
       record.description || '',
-      record.keyPrefix,
+      fullKeyValue,
+      fullKeyValue,
+      fullKeyValue,
       record.keyHash,
       record.status || 'active',
       record.createdAt || new Date().toISOString(),
@@ -493,7 +512,13 @@ class MemoryAdminRepository {
   }
 
   async createKey(record) {
-    this.keys.set(record.id, { ...record });
+    const fullKeyValue = record.fullKey || record.apiKey || record.keyPrefix;
+    this.keys.set(record.id, {
+      ...record,
+      fullKey: fullKeyValue,
+      apiKey: fullKeyValue,
+      keyPrefix: fullKeyValue,
+    });
   }
 
   async getKeyById(id) {

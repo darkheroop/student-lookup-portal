@@ -14,7 +14,6 @@ class AdminKeyService {
 
     const rawSecret = crypto.randomBytes(32).toString('hex');
     const fullKey = `sk_support_${rawSecret}`;
-    const keyPrefix = `sk_support_${rawSecret.slice(0, 8)}...`;
     const keyHash = this.hashKey(fullKey);
 
     const now = new Date().toISOString();
@@ -36,7 +35,9 @@ class AdminKeyService {
       id: crypto.randomUUID(),
       projectName,
       name: projectName,
-      keyPrefix,
+      fullKey,
+      apiKey: fullKey,
+      keyPrefix: fullKey,
       keyHash,
       status: 'active',
       createdAt: now,
@@ -58,8 +59,11 @@ class AdminKeyService {
         id: record.id,
         name: record.projectName,
         projectName: record.projectName,
-        api_key: record.keyPrefix,
-        keyPrefix: record.keyPrefix,
+        api_key: fullKey,
+        apiKey: fullKey,
+        full_key: fullKey,
+        fullKey,
+        keyPrefix: fullKey,
         is_active: true,
         status: record.status,
         rate_limit_per_minute: record.rateLimitPerMinute,
@@ -77,22 +81,28 @@ class AdminKeyService {
     const repo = getAdminRepository();
     const result = await repo.listKeys(options);
 
-    const mappedKeys = result.keys.map(k => ({
-      id: k.id,
-      name: k.projectName || k.name,
-      projectName: k.projectName || k.name,
-      api_key: k.keyPrefix,
-      keyPrefix: k.keyPrefix,
-      is_active: k.status === 'active',
-      status: k.status,
-      rate_limit_per_minute: k.rateLimitPerMinute || 60,
-      requests_count: k.totalRequests || 0,
-      totalRequests: k.totalRequests || 0,
-      createdAt: k.createdAt,
-      updatedAt: k.updatedAt,
-      expiresAt: k.expiresAt,
-      last_used_at: k.lastUsedAt,
-    }));
+    const mappedKeys = result.keys.map(k => {
+      const fullKey = k.fullKey || k.apiKey || k.api_key || k.keyPrefix;
+      return {
+        id: k.id,
+        name: k.projectName || k.name,
+        projectName: k.projectName || k.name,
+        api_key: fullKey,
+        apiKey: fullKey,
+        full_key: fullKey,
+        fullKey,
+        keyPrefix: fullKey,
+        is_active: k.status === 'active',
+        status: k.status,
+        rate_limit_per_minute: k.rateLimitPerMinute || 60,
+        requests_count: k.totalRequests || 0,
+        totalRequests: k.totalRequests || 0,
+        createdAt: k.createdAt,
+        updatedAt: k.updatedAt,
+        expiresAt: k.expiresAt,
+        last_used_at: k.lastUsedAt,
+      };
+    });
 
     return {
       keys: mappedKeys,
@@ -104,12 +114,16 @@ class AdminKeyService {
     const repo = getAdminRepository();
     const k = await repo.getKeyById(id);
     if (!k) return null;
+    const fullKey = k.fullKey || k.apiKey || k.api_key || k.keyPrefix;
     return {
       id: k.id,
       name: k.projectName || k.name,
       projectName: k.projectName || k.name,
-      api_key: k.keyPrefix,
-      keyPrefix: k.keyPrefix,
+      api_key: fullKey,
+      apiKey: fullKey,
+      full_key: fullKey,
+      fullKey,
+      keyPrefix: fullKey,
       is_active: k.status === 'active',
       status: k.status,
       rate_limit_per_minute: k.rateLimitPerMinute || 60,

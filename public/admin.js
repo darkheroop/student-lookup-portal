@@ -336,18 +336,35 @@ document.addEventListener('DOMContentLoaded', () => {
       info.appendChild(nameLine);
 
       const keyDisplay = document.createElement('div');
-      keyDisplay.style.margin = '4px 0';
+      keyDisplay.style.margin = '6px 0';
+      const fullApiKeyValue = (key.api_key || key.fullKey || key.full_key || key.keyPrefix || '').trim();
       keyDisplay.innerHTML = `
-        <span class="key-token-box">
-          <code>${escapeHtml(key.api_key || key.keyPrefix)}</code>
-          <button type="button" class="btn-copy-inline" title="Copy Key Token">Copy</button>
+        <span class="key-token-box" style="display:inline-flex; align-items:center; justify-content:space-between; gap:10px; word-break:break-all; max-width:100%; padding:6px 10px; background:#f1f5f9; border-radius:4px; border:1px solid #cbd5e1;">
+          <code style="word-break:break-all; font-size:0.875rem; color:#1e3a8a; font-weight:600;">${escapeHtml(fullApiKeyValue)}</code>
+          <button type="button" class="btn-copy-inline" title="Copy Full API Key" aria-label="Copy Full API Key" style="display:inline-flex; align-items:center; gap:4px; flex-shrink:0; cursor:pointer; font-weight:600; padding:2px 8px; border-radius:4px; border:1px solid #cbd5e1; background:#ffffff;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span class="copy-text">Copy</span>
+          </button>
         </span>
       `;
       const copyBtn = keyDisplay.querySelector('.btn-copy-inline');
-      copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(key.api_key || key.keyPrefix).then(() => {
-          showAlert('Key prefix copied to clipboard!', 'success');
-        });
+      const copyTextSpan = copyBtn.querySelector('.copy-text');
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(fullApiKeyValue);
+          copyTextSpan.textContent = 'Copied!';
+          copyBtn.style.color = '#16a34a';
+          showAlert('Full API key copied to clipboard!', 'success');
+          setTimeout(() => {
+            copyTextSpan.textContent = 'Copy';
+            copyBtn.style.color = '';
+          }, 2000);
+        } catch {
+          showAlert('Copied: ' + fullApiKeyValue, 'success');
+        }
       });
       info.appendChild(keyDisplay);
 
@@ -486,11 +503,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Modal actions
   btnCopySecret?.addEventListener('click', async () => {
-    const text = revealedSecretKey.textContent;
+    const text = (revealedSecretKey.textContent || '').trim();
     try {
       await navigator.clipboard.writeText(text);
       const orig = btnCopySecret.textContent;
-      btnCopySecret.textContent = '✓ Copied Secret to Clipboard!';
+      btnCopySecret.textContent = '✓ Copied Full Key to Clipboard!';
+      showAlert('Full API key copied to clipboard!', 'success');
       setTimeout(() => {
         btnCopySecret.textContent = orig;
       }, 2500);
@@ -506,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Code Snippets Generation ────────────────────────────────────────
   function getSampleApiKey() {
     const active = activeClientKeys.find((k) => k.is_active);
-    return active ? (active.api_key || active.keyPrefix) : 'sk_support_your_generated_secret_here';
+    return active ? (active.api_key || active.fullKey || active.full_key || active.keyPrefix) : 'sk_support_your_generated_secret_here';
   }
 
   function updateCodeSnippets() {
