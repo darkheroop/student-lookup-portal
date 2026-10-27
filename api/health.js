@@ -3,24 +3,31 @@
  * Reports service status and safe configuration flags without exposing secret values.
  */
 
+const { validateConfig } = require('../lib/apiClients');
+
 module.exports = function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
 
-  const main1Configured = Boolean(process.env.MAIN1_API_KEY?.trim());
-  const main2Configured = Boolean(process.env.MAIN2_API_KEY?.trim());
+  let isConfigured = false;
+  try {
+    const { main1Key, main2Key } = validateConfig(process.env);
+    isConfigured = Boolean(main1Key && main2Key);
+  } catch {
+    isConfigured = false;
+  }
 
   const responsePayload = {
-    status: (main1Configured && main2Configured) ? 'healthy' : 'misconfigured',
+    status: isConfigured ? 'healthy' : 'misconfigured',
     service: 'lookup-service',
     configured: {
-      MAIN1_API_KEY: main1Configured,
-      MAIN2_API_KEY: main2Configured,
+      MAIN1_API_KEY: isConfigured,
+      MAIN2_API_KEY: isConfigured,
     },
   };
 
-  const statusCode = (main1Configured && main2Configured) ? 200 : 503;
+  const statusCode = isConfigured ? 200 : 503;
 
   if (typeof res.status === 'function') {
     return res.status(statusCode).json(responsePayload);

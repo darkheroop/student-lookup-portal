@@ -65,6 +65,7 @@ function createMockUpstreamServer(handlers) {
 
 test.beforeEach(() => {
   _resetRateLimiter();
+  process.env.NODE_ENV = 'test';
   process.env.MAIN1_API_KEY = 'mock_main1_auth_token';
   process.env.MAIN2_API_KEY = 'mock_main2_auth_token';
 });
