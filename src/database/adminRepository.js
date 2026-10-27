@@ -50,7 +50,11 @@ class PostgresAdminRepository {
   }
 
   async init() {
-    if (this.initialized) return;
+    const globalAny = global;
+    if (this.initialized || globalAny.__neonSchemaInitialized) {
+      this.initialized = true;
+      return;
+    }
 
     if (PostgresAdminRepository.initPromise) {
       return PostgresAdminRepository.initPromise;
@@ -131,6 +135,7 @@ class PostgresAdminRepository {
         await client.query(`
           CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
           CREATE INDEX IF NOT EXISTS idx_api_keys_status ON api_keys(status);
+          CREATE INDEX IF NOT EXISTS idx_api_keys_created_at ON api_keys(created_at DESC);
           CREATE INDEX IF NOT EXISTS idx_api_key_usage_key_id ON api_key_usage(key_id);
           CREATE INDEX IF NOT EXISTS idx_api_key_usage_timestamp ON api_key_usage(timestamp DESC);
         `);
@@ -151,6 +156,7 @@ class PostgresAdminRepository {
 
         await client.query('COMMIT');
         this.initialized = true;
+        globalAny.__neonSchemaInitialized = true;
       } catch (err) {
         if (client) {
           await client.query('ROLLBACK').catch(() => {});
@@ -203,7 +209,7 @@ class PostgresAdminRepository {
     if (!username) return null;
     await this.init();
     const res = await this.pool.query(
-      'SELECT username, password_hash FROM admin_users WHERE LOWER(username) = LOWER($1)',
+      'SELECT username, password_hash FROM admin_users WHERE LOWER(username) = LOWER($1) LIMIT 1',
       [username.trim()]
     );
     if (res.rows.length === 0) return null;
@@ -286,14 +292,14 @@ class PostgresAdminRepository {
 
   async getKeyById(id) {
     await this.init();
-    const res = await this.pool.query('SELECT * FROM api_keys WHERE id = $1', [id]);
+    const res = await this.pool.query('SELECT * FROM api_keys WHERE id = $1 LIMIT 1', [id]);
     if (res.rows.length === 0) return null;
     return this.mapRowToRecord(res.rows[0]);
   }
 
   async getKeyByHash(hash) {
     await this.init();
-    const res = await this.pool.query('SELECT * FROM api_keys WHERE key_hash = $1', [hash]);
+    const res = await this.pool.query('SELECT * FROM api_keys WHERE key_hash = $1 LIMIT 1', [hash]);
     if (res.rows.length === 0) return null;
     return this.mapRowToRecord(res.rows[0]);
   }
@@ -319,23 +325,28 @@ class PostgresAdminRepository {
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const countRes = await this.pool.query(`SELECT COUNT(*) as count FROM api_keys ${whereClause}`, values);
-    const total = parseInt(countRes.rows[0]?.count || '0', 10);
-
     const limit = options.limit ? Math.min(100, Math.max(1, parseInt(String(options.limit), 10))) : 50;
     const offset = options.offset ? Math.max(0, parseInt(String(options.offset), 10)) : 0;
 
     const dataQuery = `
-      SELECT * FROM api_keys
+      SELECT *, COUNT(*) OVER() as full_count FROM api_keys
       ${whereClause}
       ORDER BY created_at DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
-    values.push(limit, offset);
+    const queryValues = [...values, limit, offset];
 
-    const dataRes = await this.pool.query(dataQuery, values);
+    const dataRes = await this.pool.query(dataQuery, queryValues);
+
+    let total = 0;
+    if (dataRes.rows.length > 0) {
+      total = parseInt(dataRes.rows[0].full_count || '0', 10);
+    } else if (offset > 0) {
+      const countRes = await this.pool.query(`SELECT COUNT(*) as count FROM api_keys ${whereClause}`, values);
+      total = parseInt(countRes.rows[0]?.count || '0', 10);
+    }
+
     const keys = dataRes.rows.map(r => this.mapRowToRecord(r));
-
     return { keys, total };
   }
 

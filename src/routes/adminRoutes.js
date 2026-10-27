@@ -178,12 +178,32 @@ router.post(['/account/update', '/api/account/update'], async (req, res) => {
   }
 });
 
+let cachedDashboardStats = null;
+let cachedDashboardStatsTimestamp = 0;
+const DASHBOARD_CACHE_TTL_MS = 5000; // 5 seconds
+
+function invalidateDashboardCache() {
+  cachedDashboardStats = null;
+  cachedDashboardStatsTimestamp = 0;
+}
+
 /**
  * GET /dashboard and /api/dashboard
  */
 router.get(['/dashboard', '/api/dashboard'], async (_req, res) => {
   try {
+    const now = Date.now();
+    if (cachedDashboardStats && (now - cachedDashboardStatsTimestamp < DASHBOARD_CACHE_TTL_MS)) {
+      return res.json({
+        success: true,
+        stats: cachedDashboardStats,
+      });
+    }
+
     const stats = await adminKeyService.getDashboardMetrics();
+    cachedDashboardStats = stats;
+    cachedDashboardStatsTimestamp = now;
+
     return res.json({
       success: true,
       stats,
@@ -241,6 +261,7 @@ router.post(['/keys', '/client-keys', '/api/client-keys'], async (req, res) => {
       expiresAt: typeof expiresAt === 'string' ? expiresAt : undefined,
       rateLimitPerMinute: rateLimit ? Number(rateLimit) : 60,
     });
+    invalidateDashboardCache();
 
     return res.status(201).json({
       success: true,
@@ -286,6 +307,7 @@ router.patch('/keys/:id', async (req, res) => {
         error: { code: 'NOT_FOUND', message: 'API key not found.' },
       });
     }
+    invalidateDashboardCache();
     return res.json({
       success: true,
       message: 'API key updated successfully.',
@@ -308,6 +330,7 @@ router.post(['/keys/:id/toggle', '/client-keys/:id/toggle', '/api/client-keys/:i
 
     const newStatus = key.status === 'active' ? 'disabled' : 'active';
     const updated = await adminKeyService.updateKey(req.params.id, { status: newStatus });
+    invalidateDashboardCache();
 
     return res.json({
       success: true,
@@ -331,6 +354,7 @@ router.post('/keys/:id/revoke', async (req, res) => {
         error: { code: 'NOT_FOUND', message: 'API key not found.' },
       });
     }
+    invalidateDashboardCache();
     return res.json({
       success: true,
       message: 'API key permanently revoked.',
@@ -353,6 +377,7 @@ router.delete(['/keys/:id', '/client-keys/:id', '/api/client-keys/:id'], async (
         error: 'API key not found.',
       });
     }
+    invalidateDashboardCache();
     return res.json({
       success: true,
       message: 'API key deleted successfully.',

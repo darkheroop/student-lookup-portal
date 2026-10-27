@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let isSubmitting = false;
   let feedbackTimer = null;
+  let progressTimer = null;
+  let activeAbortController = null;
 
   // Real-time input filtering to allow digits only while preserving string & leading zeros
   studentNumberInput.addEventListener('input', () => {
@@ -49,14 +51,52 @@ document.addEventListener('DOMContentLoaded', () => {
     hideCopyFeedback();
   }
 
+  function startProgressFeedback() {
+    if (progressTimer) clearInterval(progressTimer);
+    if (!loadingIndicator) return;
+    const labelSpan = loadingIndicator.querySelector('span:not(.spinner)') || loadingIndicator.lastElementChild;
+    if (labelSpan) labelSpan.textContent = 'Contacting student directory...';
+
+    let elapsedSeconds = 0;
+    progressTimer = setInterval(() => {
+      elapsedSeconds++;
+      if (!labelSpan) return;
+      if (elapsedSeconds === 2) {
+        labelSpan.textContent = 'Verifying student records...';
+      } else if (elapsedSeconds === 5) {
+        labelSpan.textContent = 'Resolving credentials provider...';
+      } else if (elapsedSeconds === 9) {
+        labelSpan.textContent = 'Securing response payload...';
+      }
+    }, 1000);
+  }
+
+  function stopProgressFeedback() {
+    if (progressTimer) {
+      clearInterval(progressTimer);
+      progressTimer = null;
+    }
+    if (loadingIndicator) {
+      const labelSpan = loadingIndicator.querySelector('span:not(.spinner)') || loadingIndicator.lastElementChild;
+      if (labelSpan) labelSpan.textContent = 'Processing...';
+    }
+  }
+
   function setLoading(loading) {
     isSubmitting = loading;
     submitBtn.disabled = loading;
     studentNumberInput.disabled = loading;
+    form.setAttribute('aria-busy', loading ? 'true' : 'false');
     if (loadingIndicator) {
       loadingIndicator.hidden = !loading;
     }
     submitBtn.textContent = loading ? 'Processing...' : 'Submit';
+
+    if (loading) {
+      startProgressFeedback();
+    } else {
+      stopProgressFeedback();
+    }
   }
 
   function showCopyFeedback(msg, isError) {
@@ -154,6 +194,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Cancel any previous pending request if exists
+    if (activeAbortController) {
+      activeAbortController.abort();
+    }
+    activeAbortController = new AbortController();
+
     // Disable button & show loading indicator
     setLoading(true);
 
@@ -162,10 +208,12 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
           studentNumber: inputValue,
         }),
+        signal: activeAbortController.signal,
       });
 
       let data;

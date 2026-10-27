@@ -9,7 +9,7 @@
 
 const DEFAULT_MAIN1_URL = 'https://student-login-support.vercel.app/api/support/login-diagnostics';
 const DEFAULT_MAIN2_URL = 'https://student-credentials-provider.vercel.app/api/v1/lookup';
-const REQUEST_TIMEOUT_MS = 8000;
+const REQUEST_TIMEOUT_MS = 18000;
 
 /**
  * Validates input and executes the Main1 -> Main2 integration.
@@ -52,12 +52,15 @@ async function performLookup(studentNumber) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Connection': 'keep-alive',
+        'Accept': 'application/json',
         'x-api-key': main1ApiKey,
       },
       body: JSON.stringify({
         studentNumber: cleanStudentNumber,
       }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      keepalive: true,
     });
   } catch (err) {
     console.error('[LookupService] Main1 network/timeout failure');
@@ -107,6 +110,8 @@ async function performLookup(studentNumber) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Connection': 'keep-alive',
+        'Accept': 'application/json',
         'X-API-Key': main2ApiKey,
       },
       body: JSON.stringify({
@@ -114,6 +119,7 @@ async function performLookup(studentNumber) {
         algorithm_type: 'md5',
       }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      keepalive: true,
     });
   } catch (err) {
     console.error('[LookupService] Main2 network/timeout failure');

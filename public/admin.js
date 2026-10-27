@@ -170,8 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.history.replaceState(null, '', '/admin/dashboard');
     }
 
-    loadDashboardMetrics();
-    loadClientKeys();
+    refreshDashboardData();
   }
 
   // ── Check Session ───────────────────────────────────────────────────
@@ -264,15 +263,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (tabTarget === 'keys') {
-        loadDashboardMetrics();
-        loadClientKeys();
+        refreshDashboardData(true);
       } else if (tabTarget === 'reference') {
         updateCodeSnippets();
       }
     });
   });
 
-  // ── Dashboard Metrics ───────────────────────────────────────────────
+  // ── Dashboard Metrics & Data Sync ────────────────────────────────────
+  async function refreshDashboardData(silent = false) {
+    await Promise.allSettled([
+      loadDashboardMetrics(),
+      loadClientKeys(silent)
+    ]);
+  }
+
   async function loadDashboardMetrics() {
     try {
       const res = await apiFetch('/api/admin/dashboard');
@@ -291,11 +296,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ── Load Configured Keys ────────────────────────────────────────────
-  async function loadClientKeys() {
+  async function loadClientKeys(silent = false) {
     if (!clientKeysList) return;
 
     try {
-      clientKeysList.innerHTML = '<p class="empty-state">Loading configured API keys...</p>';
+      if (!silent && activeClientKeys.length === 0) {
+        clientKeysList.innerHTML = '<p class="empty-state">Loading configured API keys...</p>';
+      }
       const res = await apiFetch('/admin/api/client-keys?limit=100');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -304,7 +311,9 @@ document.addEventListener('DOMContentLoaded', () => {
       renderClientKeys(activeClientKeys);
       updateCodeSnippets();
     } catch (err) {
-      clientKeysList.innerHTML = `<p class="empty-state">Error loading keys: ${err.message}</p>`;
+      if (activeClientKeys.length === 0) {
+        clientKeysList.innerHTML = `<p class="empty-state">Error loading keys: ${err.message}</p>`;
+      }
       showAlert(err.message, 'error');
     }
   }
@@ -408,8 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       if (res.ok && data.success) {
         showAlert(data.message || 'Key status updated.', 'success');
-        loadClientKeys();
-        loadDashboardMetrics();
+        refreshDashboardData(true);
       } else {
         showAlert(data.error?.message || data.error || 'Failed to update key status.', 'error');
       }
@@ -428,8 +436,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       if (res.ok && data.success) {
         showAlert(data.message || 'Key deleted successfully.', 'success');
-        loadClientKeys();
-        loadDashboardMetrics();
+        activeClientKeys = activeClientKeys.filter(k => k.id !== keyId);
+        renderClientKeys(activeClientKeys);
+        refreshDashboardData(true);
       } else {
         showAlert(data.error?.message || data.error || 'Failed to delete key.', 'error');
       }
@@ -483,8 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalSecretReveal.classList.remove('hidden');
 
         showAlert('API Key generated successfully! Make sure to copy the secret key.', 'success');
-        loadClientKeys();
-        loadDashboardMetrics();
+        refreshDashboardData(true);
       } else {
         showAlert(data.error?.message || data.error || 'Failed to generate key.', 'error');
       }
@@ -497,8 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   refreshClientKeysBtn?.addEventListener('click', () => {
-    loadClientKeys();
-    loadDashboardMetrics();
+    refreshDashboardData();
   });
 
   // Modal actions
