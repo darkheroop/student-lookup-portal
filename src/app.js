@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const lookupHandler = require('../api/lookup');
+const adminRoutes = require('./routes/adminRoutes');
 const { rateLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
@@ -20,6 +21,28 @@ app.use((req, res, next) => {
   next();
 });
 
+// Cookie parsing middleware
+app.use((req, res, next) => {
+  req.cookies = {};
+  const cookieHeader = req.headers.cookie;
+  if (cookieHeader) {
+    const pairs = cookieHeader.split(';');
+    for (const pair of pairs) {
+      const idx = pair.indexOf('=');
+      if (idx !== -1) {
+        const key = pair.substring(0, idx).trim();
+        const val = pair.substring(idx + 1).trim();
+        try {
+          req.cookies[key] = decodeURIComponent(val);
+        } catch {
+          req.cookies[key] = val;
+        }
+      }
+    }
+  }
+  next();
+});
+
 // JSON body parser with strict size limit
 app.use(express.json({ limit: '10kb' }));
 
@@ -30,6 +53,20 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.get('/api/health', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.status(200).json({ status: 'ok', service: 'lookup-service' });
+});
+
+// Mount Admin API routes
+app.use(['/api/admin', '/admin/api'], adminRoutes);
+
+// Direct admin login and logout endpoints
+app.post(['/admin/login', '/admin/logout'], (req, res, next) => {
+  req.url = req.url.replace(/^\/admin/, '');
+  adminRoutes(req, res, next);
+});
+
+// Admin UI routes
+app.get(['/admin', '/admin/dashboard', '/admin/*'], (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/admin.html'));
 });
 
 // Mount /api/lookup and /lookup

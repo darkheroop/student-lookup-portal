@@ -1,2 +1,4 @@
 // Vercel Serverless Function entry point
-module.exports = require('./lookup');
+const app = require('../src/app');
+
+module.exports = app;

@@ -276,3 +276,32 @@ input[type="text"]:disabled {
     margin-bottom: 1.25rem;
   }
 }
+
+/* Admin Settings Link */
+.settings-link {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 8px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  z-index: 50;
+  border: 1px solid transparent;
+}
+
+.settings-link:hover {
+  color: var(--primary-color);
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.settings-link:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}

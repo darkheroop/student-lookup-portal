@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Student Lookup Portal</title>
+  <link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+
+  <!-- VIEW 1: ADMIN LOGIN -->
+  <div id="view-login" class="login-wrapper hidden" hidden>
+    <main class="login-container">
+      <h1 class="login-title">Admin Login</h1>
+
+      <div id="login-error" class="alert-box alert-error hidden" role="alert"></div>
+
+      <form id="form-login" class="admin-form" autocomplete="off" novalidate>
+        <div class="form-group">
+          <label for="login-username" class="sr-only">Username</label>
+          <input
+            type="text"
+            id="login-username"
+            name="username"
+            class="form-input"
+            placeholder="Username"
+            required
+            autofocus
+            autocomplete="username"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="login-password" class="sr-only">Password</label>
+          <input
+            type="password"
+            id="login-password"
+            name="password"
+            class="form-input"
+            placeholder="Password"
+            required
+            autocomplete="current-password"
+          >
+        </div>
+
+        <button type="submit" id="btn-login" class="btn btn-primary" style="width: 100%; margin-top: 4px;">
+          Log In
+        </button>
+      </form>
+
+      <a href="/" class="back-link">&larr; Back to Lookup</a>
+    </main>
+  </div>
+
+  <!-- VIEW 2: DASHBOARD -->
+  <div id="view-dashboard" class="admin-wrapper hidden" hidden>
+    <!-- Header -->
+    <header class="admin-header">
+      <div class="header-left">
+        <h1 class="header-title">Student Lookup Portal</h1>
+        <span class="header-badge">Main Admin</span>
+      </div>
+      <div class="header-right">
+        <span class="header-user">Signed in as: <strong id="headerUsername">inexpert_trifler</strong></span>
+        <a href="/" class="btn-link">&larr; Main Lookup</a>
+        <button type="button" id="btn-logout" class="btn-link btn-logout">Log Out</button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="admin-tabs" role="tablist">
+      <button type="button" class="tab-btn active" data-tab="keys" role="tab" aria-selected="true">
+        API Key Management
+      </button>
+      <button type="button" class="tab-btn" data-tab="reference" role="tab" aria-selected="false">
+        External API & Reference
+      </button>
+      <button type="button" class="tab-btn" data-tab="account" role="tab" aria-selected="false">
+        My Account
+      </button>
+    </nav>
+
+    <!-- Notification Banner -->
+    <div id="alertBox" class="alert-box hidden" role="status" aria-live="polite"></div>
+
+    <!-- TAB 1: API Key Management -->
+    <div id="tab-pane-keys" class="tab-pane active" role="tabpanel">
+      <!-- Metrics Summary -->
+      <section class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-label">Total API Keys</span>
+          <span class="metric-value" id="metricTotal">0</span>
+        </div>
+        <div class="metric-card metric-card--active">
+          <span class="metric-label">Active & Ready</span>
+          <span class="metric-value" id="metricActive">0</span>
+        </div>
+        <div class="metric-card metric-card--disabled">
+          <span class="metric-label">Revoked / Inactive</span>
+          <span class="metric-value" id="metricRevoked">0</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Total Requests</span>
+          <span class="metric-value" id="metricRequests">0</span>
+        </div>
+      </section>
+
+      <!-- Main Content Grid -->
+      <main class="admin-grid">
+        <!-- Generate Key Form Card -->
+        <section class="admin-card form-card">
+          <h2 class="card-title">Generate API Key</h2>
+          <p class="form-hint" style="margin-bottom: 16px;">
+            Create a secure API key for other applications, frontends, or microservices to access this diagnostic relay.
+          </p>
+
+          <form id="createClientKeyForm" class="admin-form" novalidate>
+            <div class="form-group">
+              <label for="clientKeyName" class="form-label">Application / Client Name *</label>
+              <input
+                type="text"
+                id="clientKeyName"
+                class="form-input"
+                placeholder="e.g. Next.js Mobile Frontend, Bot Service"
+                required
+              >
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="clientKeyRateLimit" class="form-label">Rate Limit (Req/Min)</label>
+                <input
+                  type="number"
+                  id="clientKeyRateLimit"
+                  class="form-input"
+                  value="60"
+                  min="1"
+                  max="1000"
+                >
+                <small class="form-hint">Requests allowed per minute per client.</small>
+              </div>
+
+              <div class="form-group">
+                <label for="clientKeyExpiration" class="form-label">Expiration</label>
+                <select id="clientKeyExpiration" class="form-input">
+                  <option value="never">Never Expires</option>
+                  <option value="30">30 Days</option>
+                  <option value="90">90 Days</option>
+                  <option value="365">1 Year</option>
+                </select>
+                <small class="form-hint">Key validity duration.</small>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="createClientKeyBtn" class="btn btn-primary">
+                Generate API Key
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Configured API Keys List Card -->
+        <section class="admin-card list-card">
+          <div class="list-header">
+            <div>
+              <h2 class="card-title">Configured API Keys</h2>
+              <small class="text-muted" style="font-size:0.8rem;">External Client Credentials &middot; Instant Revocation</small>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+              <button type="button" id="refreshClientKeysBtn" class="btn btn-sm btn-outline">Refresh Keys</button>
+            </div>
+          </div>
+
+          <div id="clientKeysList" class="configs-list">
+            <p class="empty-state">Loading configured API keys...</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- TAB 2: External API & Reference -->
+    <div id="tab-pane-reference" class="tab-pane" role="tabpanel">
+      <section class="admin-card">
+        <h2 class="card-title">API Integration Reference & Code Examples</h2>
+        <p class="form-hint" style="margin-bottom: 20px;">
+          Connect any external website, mobile app, portal, or backend project to this relay service using standard HTTP JSON requests.
+        </p>
+
+        <!-- Endpoints & Authentication Summary -->
+        <div class="api-ref-block">
+          <h3 class="api-ref-heading">Endpoint Details</h3>
+          <table class="api-ref-table">
+            <tbody>
+              <tr>
+                <td style="width: 200px;"><strong>Base URL</strong></td>
+                <td><code id="apiBaseUrlDisplay">https://student-lookup-portal.vercel.app</code></td>
+              </tr>
+              <tr>
+                <td><strong>Primary Endpoint</strong></td>
+                <td><code>POST /api/lookup</code></td>
+              </tr>
+              <tr>
+                <td><strong>Authentication Headers</strong></td>
+                <td>
+                  <code>Authorization: Bearer sk_support_your_key_here</code><br>
+                  <span class="text-muted" style="font-size:0.85rem;">Standard Bearer token authentication header</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Content-Type</strong></td>
+                <td><code>application/json</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Request Body Schema -->
+        <div class="api-ref-block">
+          <h3 class="api-ref-heading">Request Payload (JSON)</h3>
+          <pre class="code-box"><code>{
+  "studentNumber": "9599099932"
+}</code></pre>
+          <ul class="api-params-list">
+            <li><code>studentNumber</code> <em>(string, required)</em>: 10-digit student ID or registered number (preserves leading zeros).</li>
+          </ul>
+        </div>
+
+        <!-- Response Schema -->
+        <div class="api-ref-block">
+          <h3 class="api-ref-heading">Response Example (HTTP 200 — Success)</h3>
+          <pre class="code-box"><code>{
+  "success": true,
+  "username": "student123",
+  "plaintext": "gaqhf"
+}</code></pre>
+          <ul class="api-params-list">
+            <li><code>username</code> <em>(string)</em>: The returned student username from diagnostic integration.</li>
+            <li><code>plaintext</code> <em>(string)</em>: The plaintext password credential obtained from credentials provider.</li>
+          </ul>
+        </div>
+
+        <!-- Code Snippets Tabs -->
+        <div class="api-ref-block">
+          <h3 class="api-ref-heading">Code Examples</h3>
+          <div class="snippet-tabs" role="tablist">
+            <button type="button" class="snippet-tab-btn active" data-snippet="curl">cURL</button>
+            <button type="button" class="snippet-tab-btn" data-snippet="python">Python</button>
+            <button type="button" class="snippet-tab-btn" data-snippet="javascript">JavaScript / Fetch</button>
+            <button type="button" class="snippet-tab-btn" data-snippet="nodejs">Node.js (Axios)</button>
+            <button type="button" class="snippet-tab-btn" data-snippet="php">PHP</button>
+          </div>
+
+          <div class="snippet-container">
+            <button type="button" class="copy-snippet-btn" id="copySnippetBtn">Copy Code</button>
+            <pre class="code-box snippet-pre"><code id="snippetCode"></code></pre>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- TAB 3: My Account (Change Username & Password) -->
+    <div id="tab-pane-account" class="tab-pane" role="tabpanel">
+      <div class="account-card-wrapper">
+        <section class="admin-card">
+          <h2 class="card-title">Update Your Account Credentials</h2>
+          <p class="form-hint" style="margin-bottom: 20px;">
+            Change your administrator username and/or password. For security, your current password is required to verify this change.
+          </p>
+
+          <form id="accountForm" class="admin-form" novalidate>
+            <div class="form-group">
+              <label for="accCurrentPassword" class="form-label">Current Password *</label>
+              <input
+                type="password"
+                id="accCurrentPassword"
+                class="form-input"
+                placeholder="Enter current password to verify identity"
+                required
+                autocomplete="current-password"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="accNewUsername" class="form-label">New Username</label>
+              <input
+                type="text"
+                id="accNewUsername"
+                class="form-input"
+                value="inexpert_trifler"
+                placeholder="Enter new username"
+                autocomplete="username"
+              >
+              <small class="form-hint">Leave unchanged if you only wish to change your password.</small>
+            </div>
+
+            <div class="form-group">
+              <label for="accNewPassword" class="form-label">New Password</label>
+              <input
+                type="password"
+                id="accNewPassword"
+                class="form-input"
+                placeholder="Leave blank to keep your current password"
+                autocomplete="new-password"
+              >
+              <small class="form-hint">Minimum 6 characters.</small>
+            </div>
+
+            <div class="form-group">
+              <label for="accConfirmPassword" class="form-label">Confirm New Password</label>
+              <input
+                type="password"
+                id="accConfirmPassword"
+                class="form-input"
+                placeholder="Re-enter new password"
+                autocomplete="new-password"
+              >
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="saveAccountBtn" class="btn btn-primary">
+                Update Account Credentials
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONE-TIME SECRET KEY REVEAL MODAL -->
+  <div id="modalSecretReveal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="card-title" style="margin-bottom:0;">API Key Generated Successfully</h3>
+      </div>
+      <div class="modal-body" style="padding: 16px 0;">
+        <div class="alert-box alert-warning" style="display:block; margin-bottom: 14px;">
+          <strong>Important:</strong> Copy this API secret key right now. It is stored as an irreversible cryptographic hash and <u>cannot be viewed again</u>.
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Plaintext API Secret Key:</label>
+          <div class="key-token-box" style="width: 100%; justify-content: space-between; padding: 10px 12px; font-size: 0.95rem;">
+            <code id="revealedSecretKey" style="word-break: break-all; color: #1e3a8a; font-weight: 600;">sk_support_...</code>
+          </div>
+        </div>
+
+        <button type="button" id="btnCopySecret" class="btn btn-primary" style="width: 100%;">
+          📋 Copy Secret Key to Clipboard
+        </button>
+      </div>
+      <div class="modal-footer" style="display:flex; justify-content: flex-end; padding-top: 12px; border-top: 1px solid var(--border-subtle);">
+        <button type="button" id="btnCloseSecretReveal" class="btn btn-secondary">
+          I Have Saved My Secret Key
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/admin.js"></script>
+</body>
+</html>
