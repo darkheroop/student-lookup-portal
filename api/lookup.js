@@ -3,7 +3,7 @@
  * Connects frontend request to Main1 -> Main2 sequential integration.
  */
 
-const { orchestrateLookup } = require('../lib/apiClients');
+const { orchestrateLookup, prewarmUpstreams } = require('../lib/apiClients');
 
 /**
  * Helper to ensure the request body is parsed as JSON across
@@ -90,6 +90,18 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    // Fast non-blocking socket pre-warming ping
+    if (body && (body.warmup || body.ping)) {
+      prewarmUpstreams(process.env).catch(() => {});
+      const warmPayload = { success: true, warm: true };
+      if (typeof res.status === 'function') {
+        return res.status(200).json(warmPayload);
+      }
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      return res.end(JSON.stringify(warmPayload));
+    }
+
     const studentNumber = body?.studentNumber;
     const result = await orchestrateLookup(studentNumber, process.env);
 

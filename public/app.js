@@ -15,12 +15,35 @@ document.addEventListener('DOMContentLoaded', () => {
   let feedbackTimer = null;
   let progressTimer = null;
   let activeAbortController = null;
+  let hasPrewarmed = false;
+
+  // Proactive background pre-warming to eliminate serverless cold starts
+  function triggerPrewarm() {
+    if (hasPrewarmed) return;
+    hasPrewarmed = true;
+    try {
+      fetch('/api/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ warmup: true }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // non-blocking
+    }
+  }
+
+  // Pre-warm on focus or after typing 3 digits
+  studentNumberInput?.addEventListener('focus', triggerPrewarm, { once: true });
 
   // Real-time input filtering to allow digits only while preserving string & leading zeros
   studentNumberInput.addEventListener('input', () => {
     const cleaned = studentNumberInput.value.replace(/\D/g, '');
     if (studentNumberInput.value !== cleaned) {
       studentNumberInput.value = cleaned;
+    }
+    if (cleaned.length >= 3) {
+      triggerPrewarm();
     }
     if (!errorMessage.hidden) {
       hideError();
@@ -234,6 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Display username and password safely as text
       showResult(data.username, data.password || data.plaintext);
     } catch (err) {
+      if (err.name === 'AbortError') return;
       showError(err.message || 'The lookup service is temporarily unavailable. Please try again.');
     } finally {
       setLoading(false);
