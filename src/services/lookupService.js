@@ -3,8 +3,8 @@
  * Coordinates the sequential integration workflow:
  * 1. Validate student number (10 numeric digits, string preservation).
  * 2. Query Main1 (Student Login Support) for username and MD5 hash.
- * 3. Query Main2 (Student Credentials Provider) with hash to resolve plaintext.
- * 4. Return exclusively { success: true, username, plaintext }.
+ * 3. Query Main2 (Student Credentials Provider) with hash to resolve password.
+ * 4. Return exclusively { success: true, username, password }.
  */
 
 const DEFAULT_MAIN1_URL = 'https://student-login-support.vercel.app/api/support/login-diagnostics';
@@ -14,7 +14,7 @@ const REQUEST_TIMEOUT_MS = 8000;
 /**
  * Validates input and executes the Main1 -> Main2 integration.
  * @param {unknown} studentNumber
- * @returns {Promise<{ success: boolean, username: string, plaintext: string }>}
+ * @returns {Promise<{ success: boolean, username: string, password: string }>}
  */
 async function performLookup(studentNumber) {
   // Step 1: Validate input
@@ -168,7 +168,7 @@ async function performLookup(studentNumber) {
     : '';
 
   if (!isMatchFound || !lookupResult) {
-    const error = new Error('No matching plaintext was found.');
+    const error = new Error('No matching password was found.');
     error.statusCode = 404;
     throw error;
   }
@@ -177,6 +177,7 @@ async function performLookup(studentNumber) {
   return {
     success: true,
     username,
+    password: lookupResult,
     plaintext: lookupResult,
   };
 }

@@ -38,11 +38,11 @@ The web application provides a single-page interface with one 10-digit number in
        ▼
 [Serverless Function: api/lookup.js]
        │
-       │ 9. Validates Main2 match; extracts lookup_result as plaintext
-       │ 10. Returns ONLY { success: true, username: "...", plaintext: "..." }
+       │ 9. Validates Main2 match; extracts lookup_result as password
+       │ 10. Returns ONLY { success: true, username: "...", password: "..." }
        ▼
 [Browser Client]
-       Displays Username and Plaintext safely using DOM textContent.
+       Displays Username and Password safely using DOM textContent.
 ```
 
 ---
@@ -135,7 +135,7 @@ npm test
 - **Test B: Main1 Failure** — Simulates 401 auth failure, 500 server error, malformed JSON, and false success; verifies Main2 is never called.
 - **Test C: Main1 Missing Hash** — Verifies that missing hash values halt the workflow and prevent credential fabrication.
 - **Test D: Main2 Failure** — Simulates 503 service unavailable and network errors; returns safe error without displaying partial success.
-- **Test E: Full Success** — Validates end-to-end extraction: Main1 username + Main2 plaintext returned cleanly.
+- **Test E: Full Success** — Validates end-to-end extraction: Main1 username + Main2 password returned cleanly.
 - **Test F: Missing API Keys** — Verifies safe 503 response without leaking secret names.
 - **Test G: Frontend Integration** — Verifies UI elements (heading "Lookup", input, button, loading indicator, result container) and relative `/api/lookup` endpoint.
 - **Test H: No-Match Response** — Verifies Main2 no-match responses return clear user-friendly messages without fabricating results.
@@ -175,4 +175,4 @@ npm test
 Once authorized credentials are provided:
 1. Set `MAIN1_API_KEY` and `MAIN2_API_KEY` in `.env` (or Vercel Environment Variables).
 2. Enter a verified 10-digit student number authorized by the API owners.
-3. Click **Submit** — the application will automatically query Main1, pass the MD5 hash to Main2, and render the student username and decrypted plaintext.
+3. Click **Submit** — the application will automatically query Main1, pass the MD5 hash to Main2, and render the student username and decrypted password.

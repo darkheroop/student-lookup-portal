@@ -202,7 +202,7 @@ test('Test C: Main1 missing hash prevents Main2 call and fabrication', async () 
     assert.strictEqual(data.success, false);
     assert.strictEqual(main2Called, false, 'Main2 must never be called when hash is missing');
     assert.strictEqual(data.hash, undefined);
-    assert.strictEqual(data.plaintext, undefined);
+    assert.strictEqual(data.password, undefined);
   } finally {
     appServer.server.close();
     mockUpstream.server.close();
@@ -247,7 +247,7 @@ test('Test D: Main2 failure returns clear, safe error without success', async ()
     assert.strictEqual(res.status, 503);
     assert.strictEqual(data.success, false);
     assert.strictEqual(data.error, 'The lookup service is temporarily unavailable. Please try again.');
-    assert.strictEqual(data.plaintext, undefined);
+    assert.strictEqual(data.password, undefined);
     assert.strictEqual(data.hash, undefined);
   } finally {
     appServer.server.close();
@@ -256,7 +256,7 @@ test('Test D: Main2 failure returns clear, safe error without success', async ()
 });
 
 // Test E: Full success
-test('Test E: Full success returns only username and plaintext', async () => {
+test('Test E: Full success returns only username and password', async () => {
   let passedHashToMain2 = null;
   let receivedHeaderMain1 = null;
   let receivedHeaderMain2 = null;
@@ -307,7 +307,7 @@ test('Test E: Full success returns only username and plaintext', async () => {
     assert.strictEqual(res.status, 200);
     assert.strictEqual(data.success, true);
     assert.strictEqual(data.username, 'student123');
-    assert.strictEqual(data.plaintext, 'example-result');
+    assert.strictEqual(data.password, 'example-result');
     assert.strictEqual(data.hash, undefined, 'Hash must never be exposed');
     assert.strictEqual(data.diagnostics, undefined, 'Diagnostics must not be exposed');
     assert.strictEqual(passedHashToMain2, '337b2ac65e5bb92c1f49b6b76b0788b3');
@@ -410,7 +410,7 @@ test('Test H: Main2 no-match response returns clear message without fabrication'
     assert.strictEqual(res.status, 404);
     assert.strictEqual(data.success, false);
     assert.strictEqual(data.error, 'No matching result was found.');
-    assert.strictEqual(data.plaintext, undefined);
+    assert.strictEqual(data.password, undefined);
     assert.strictEqual(data.hash, undefined);
   } finally {
     appServer.server.close();

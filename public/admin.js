@@ -527,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
 # {
 #   "success": true,
 #   "username": "student123",
-#   "plaintext": "gaqhf"
+#   "password": "gaqhf"
 # }`,
 
       python: `import requests
@@ -546,7 +546,7 @@ data = response.json()
 
 if data.get("success"):
     username = data.get("username")
-    password = data.get("plaintext")
+    password = data.get("password")
     print("Username:", username)
     print("Password:", password)
 else:
@@ -568,7 +568,7 @@ async function lookupStudent(studentNumber) {
   const data = await response.json();
   if (data.success) {
     const username = data.username;
-    const password = data.plaintext;
+    const password = data.password;
     console.log('Username:', username);
     console.log('Password:', password);
   } else {
@@ -597,7 +597,7 @@ async function lookupStudent(studentNumber) {
     const data = response.data;
     if (data.success) {
       const username = data.username;
-      const password = data.plaintext;
+      const password = data.password;
       console.log('Username:', username);
       console.log('Password:', password);
     }
@@ -634,7 +634,7 @@ curl_close($ch);
 
 $data = json_decode($response, true);
 $username = $data['username'] ?? null;
-$password = $data['plaintext'] ?? null;
+$password = $data['password'] ?? null;
 
 echo "Username: " . $username . "\n";
 echo "Password: " . $password . "\n";`,

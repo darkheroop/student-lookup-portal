@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorMessage = document.getElementById('errorMessage');
   const resultArea = document.getElementById('resultArea');
   const resultUsername = document.getElementById('resultUsername');
-  const resultPassword = document.getElementById('resultPassword') || document.getElementById('resultPlaintext');
+  const resultPassword = document.getElementById('resultPassword');
   const copyUsernameBtn = document.getElementById('copyUsernameBtn');
   const copyPasswordBtn = document.getElementById('copyPasswordBtn');
   const copyFeedback = document.getElementById('copyFeedback');
@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Display username and password safely as text
-      showResult(data.username, data.plaintext);
+      showResult(data.username, data.password || data.plaintext);
     } catch (err) {
       showError(err.message || 'The lookup service is temporarily unavailable. Please try again.');
     } finally {
