@@ -43,12 +43,41 @@
       <div id="resultArea" class="result-box" aria-live="polite" hidden>
         <div class="result-row">
           <span class="result-label">Username:</span>
-          <span id="resultUsername" class="result-value"></span>
+          <div class="result-value-group">
+            <span id="resultUsername" class="result-value"></span>
+            <button
+              type="button"
+              id="copyUsernameBtn"
+              class="copy-btn"
+              title="Copy Username"
+              aria-label="Copy Username"
+            >
+              <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="result-row">
-          <span class="result-label">Plaintext:</span>
-          <span id="resultPlaintext" class="result-value"></span>
+          <span class="result-label">Password:</span>
+          <div class="result-value-group">
+            <span id="resultPassword" class="result-value"></span>
+            <button
+              type="button"
+              id="copyPasswordBtn"
+              class="copy-btn"
+              title="Copy Password"
+              aria-label="Copy Password"
+            >
+              <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+          </div>
         </div>
+        <div id="copyFeedback" class="copy-feedback" role="status" aria-live="polite" hidden></div>
       </div>
     </div>
   </main>

@@ -6,9 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorMessage = document.getElementById('errorMessage');
   const resultArea = document.getElementById('resultArea');
   const resultUsername = document.getElementById('resultUsername');
-  const resultPlaintext = document.getElementById('resultPlaintext');
+  const resultPassword = document.getElementById('resultPassword') || document.getElementById('resultPlaintext');
+  const copyUsernameBtn = document.getElementById('copyUsernameBtn');
+  const copyPasswordBtn = document.getElementById('copyPasswordBtn');
+  const copyFeedback = document.getElementById('copyFeedback');
 
   let isSubmitting = false;
+  let feedbackTimer = null;
 
   // Real-time input filtering to allow digits only while preserving string & leading zeros
   studentNumberInput.addEventListener('input', () => {
@@ -31,16 +35,18 @@ document.addEventListener('DOMContentLoaded', () => {
     errorMessage.hidden = true;
   }
 
-  function showResult(username, plaintext) {
+  function showResult(username, password) {
     resultUsername.textContent = username;
-    resultPlaintext.textContent = plaintext;
+    resultPassword.textContent = password;
     resultArea.hidden = false;
+    hideCopyFeedback();
   }
 
   function hideResult() {
     resultUsername.textContent = '';
-    resultPlaintext.textContent = '';
+    resultPassword.textContent = '';
     resultArea.hidden = true;
+    hideCopyFeedback();
   }
 
   function setLoading(loading) {
@@ -53,6 +59,80 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.textContent = loading ? 'Processing...' : 'Submit';
   }
 
+  function showCopyFeedback(msg, isError) {
+    if (!copyFeedback) return;
+    if (feedbackTimer) clearTimeout(feedbackTimer);
+
+    copyFeedback.textContent = msg;
+    copyFeedback.className = isError ? 'copy-feedback error' : 'copy-feedback';
+    copyFeedback.hidden = false;
+
+    feedbackTimer = setTimeout(() => {
+      copyFeedback.textContent = '';
+      copyFeedback.hidden = true;
+    }, 2500);
+  }
+
+  function hideCopyFeedback() {
+    if (!copyFeedback) return;
+    if (feedbackTimer) clearTimeout(feedbackTimer);
+    copyFeedback.textContent = '';
+    copyFeedback.hidden = true;
+  }
+
+  async function copyToClipboard(text, successMessage, buttonElement) {
+    if (!text) return;
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for older browsers or non-secure contexts
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        textarea.style.top = '-9999px';
+        textarea.setAttribute('readonly', '');
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (!successful) {
+          throw new Error('Clipboard write failed');
+        }
+      }
+
+      showCopyFeedback(successMessage, false);
+
+      if (buttonElement) {
+        buttonElement.classList.add('copied');
+        setTimeout(() => {
+          buttonElement.classList.remove('copied');
+        }, 1500);
+      }
+    } catch (err) {
+      showCopyFeedback('Unable to copy to clipboard.', true);
+    }
+  }
+
+  // Copy Username handler
+  if (copyUsernameBtn) {
+    copyUsernameBtn.addEventListener('click', () => {
+      const username = resultUsername.textContent;
+      copyToClipboard(username, 'Username copied!', copyUsernameBtn);
+    });
+  }
+
+  // Copy Password handler
+  if (copyPasswordBtn) {
+    copyPasswordBtn.addEventListener('click', () => {
+      const password = resultPassword.textContent;
+      copyToClipboard(password, 'Password copied!', copyPasswordBtn);
+    });
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -61,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 9. Clear stale results and errors when a new lookup begins
+    // Clear stale results and errors when a new lookup begins
     hideError();
     hideResult();
 
@@ -74,11 +154,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 2 & 3. Disable button & show loading indicator
+    // Disable button & show loading indicator
     setLoading(true);
 
     try {
-      // Connect to relative backend URL
       const response = await fetch('/api/lookup', {
         method: 'POST',
         headers: {
@@ -89,7 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }),
       });
 
-      // 4. Parse backend response safely
       let data;
       try {
         data = await response.json();
@@ -97,9 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error('The lookup service is temporarily unavailable. Please try again.');
       }
 
-      // 5. Check both HTTP status and success property
       if (!response.ok || !data || data.success !== true) {
-        // 7. Display clear error message on failure
         const msg = (data && typeof data.error === 'string' && data.error.trim())
           ? data.error.trim()
           : 'The lookup service is temporarily unavailable. Please try again.';
@@ -107,12 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // 6 & 10. Display username and plaintext only on success, as text (not injected HTML)
+      // Display username and password safely as text
       showResult(data.username, data.plaintext);
     } catch (err) {
       showError(err.message || 'The lookup service is temporarily unavailable. Please try again.');
     } finally {
-      // 8. Re-enable button in a finally block
       setLoading(false);
     }
   });

@@ -359,12 +359,17 @@ test('Test G: Frontend integration files and relative endpoints check', () => {
   assert.ok(html.includes('id="errorMessage"'), 'Error message area must exist');
   assert.ok(html.includes('id="resultArea"'), 'Result area must exist');
   assert.ok(html.includes('id="resultUsername"'), 'Username result element must exist');
-  assert.ok(html.includes('id="resultPlaintext"'), 'Plaintext result element must exist');
+  assert.ok(html.includes('id="resultPassword"'), 'Password result element must exist');
+  assert.ok(html.includes('Password:'), 'Result label must be Password');
+  assert.ok(html.includes('id="copyUsernameBtn"'), 'Copy username button must exist');
+  assert.ok(html.includes('id="copyPasswordBtn"'), 'Copy password button must exist');
 
   // Verify frontend script calls relative URL /api/lookup
   assert.ok(js.includes("fetch('/api/lookup'") || js.includes('fetch("/api/lookup"'), 'Must call relative /api/lookup');
   assert.ok(js.includes('textContent'), 'Must use safe DOM rendering');
   assert.ok(js.includes('finally'), 'Must re-enable submit in finally block');
+  assert.ok(js.includes('Username copied!'), 'Must show Username copied feedback');
+  assert.ok(js.includes('Password copied!'), 'Must show Password copied feedback');
 });
 
 // Test H: No-match response
